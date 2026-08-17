@@ -1,0 +1,44 @@
+# Option Trading Bot — example configuration
+# Copy to config.yaml and edit.
+
+# --- Watchlist ---
+tickers:
+  - SPY
+  - QQQ
+
+# --- Paper account ---
+starting_capital: 100000
+
+# --- Strategy selection ---
+# conservative | balanced | aggressive  (sets delta targets & wing widths)
+risk_profile: balanced
+
+# --- Risk gates ---
+max_open_positions: 4
+max_positions_per_ticker: 1
+max_capital_per_trade: 5000      # max buying power per spread ($)
+min_credit: 0.50                 # min net credit per contract ($)
+min_volume: 10                   # liquidity filter per leg
+min_open_interest: 50
+allow_undefined_risk: false      # never auto-trade strangles
+
+# --- Expiry window for NEW trades ---
+min_dte: 20
+max_dte: 60
+
+# --- Exit management for OPEN positions ---
+profit_target_pct: 0.50          # close when 50% of credit captured
+stop_loss_pct: 2.00              # close when loss >= 2x credit received
+exit_days_before_expiry: 2       # close before expiration
+
+# --- Loop ---
+scan_interval_minutes: 30
+
+# --- Optional AI analyst veto (needs .env keys) ---
+ai_review:
+  enabled: false
+  model: qwen3.8-max
+  base_url: https://opencode.ai/zen/go/v1
+
+# --- Logging ---
+log_level: INFO
