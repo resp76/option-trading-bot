@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: option-trading-bot
+Version: 0.1.0
+Requires-Dist: typer[all]>=0.7
+Requires-Dist: requests
