@@ -176,7 +176,7 @@ class MarketData:
                 chain_df[col] = 0
 
         # BSM delta for strike selection (uses chain IV when available, else HV)
-        from ..pricing.black_scholes import bsm_greeks
+        from ..pricing.black_scholes import bsm_greeks_vectorized
         hv = self.get_historical_volatility(ticker) or 0.25
 
         # vectorized delta computation for calls and puts separately
@@ -192,16 +192,16 @@ class MarketData:
             K = strikes[call_mask]
             T = np.maximum(dtes[call_mask], 1) / 365.0
             sigma = np.where(ivs[call_mask] > 0, ivs[call_mask], hv)
-            g = bsm_greeks(spot, K, T, RISK_FREE_RATE, sigma, kind="call")
-            deltas[call_mask] = np.array(g["delta"])
+            g = bsm_greeks_vectorized(spot, K, T, RISK_FREE_RATE, sigma, kind="call")
+            deltas[call_mask] = g["delta"]
         # puts
         put_mask = types == "put"
         if put_mask.any():
             K = strikes[put_mask]
             T = np.maximum(dtes[put_mask], 1) / 365.0
             sigma = np.where(ivs[put_mask] > 0, ivs[put_mask], hv)
-            g = bsm_greeks(spot, K, T, RISK_FREE_RATE, sigma, kind="put")
-            deltas[put_mask] = np.array(g["delta"])
+            g = bsm_greeks_vectorized(spot, K, T, RISK_FREE_RATE, sigma, kind="put")
+            deltas[put_mask] = g["delta"]
 
         chain_df["delta"] = deltas
         return chain_df, spot
