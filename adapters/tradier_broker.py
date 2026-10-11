@@ -9,7 +9,7 @@ BASE_URL = "https://api.tradier.com/v1"
 SANDBOX_URL = "https://sandbox.tradier.com/v1"
 
 from typing import Optional
-from ..bot.models import Account, Position, Strategy
+from bot.models import Account, Position, Strategy
 
 
 class TradierBroker:

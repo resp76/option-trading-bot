@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.stats import norm
+import numpy as np
+
 
 
 def bsm_price(S: float, K: float, T: float, r: float, sigma: float,
