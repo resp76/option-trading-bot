@@ -1,0 +1,27 @@
+name: Monitor Bot
+
+on:
+  schedule:
+    - cron: '0 7,10,12,15,19 * * *' # 07:00,10:00,12:00,15:00,19:00 UTC
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install -r requirements.txt || true
+      - name: Run monitor script
+        env:
+          TRADIER_TOKEN: ${{ secrets.TRADIER_TOKEN }}
+          TRADIER_ACCOUNT_ID: ${{ secrets.TRADIER_ACCOUNT_ID }}
+        run: |
+          chmod +x ./.hermes/scripts/monitor_options_bot.sh
+          ./.hermes/scripts/monitor_options_bot.sh

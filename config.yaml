@@ -1,0 +1,50 @@
+# Option Trading Bot — live-conservative config for $1k pilot
+
+# --- Watchlist ---
+tickers:
+  - SPY
+  - QQQ
+
+# --- Paper / Live account ---
+starting_capital: 1000.00
+# broker: 'paper' (default) or 'tradier' to use live/sandbox Tradier adapter
+broker: tradier
+
+# --- Strategy selection ---
+# conservative | balanced | aggressive
+risk_profile: conservative
+
+# --- Risk gates ---
+max_open_positions: 1
+max_positions_per_ticker: 1
+max_capital_per_trade: 250      # max buying power per spread ($)
+min_credit: 0.5                 # min net credit per contract ($)
+min_volume: 5                   # liquidity filter per leg
+min_open_interest: 50
+allow_undefined_risk: false      # never auto-trade strangles
+
+# --- Expiry window for NEW trades ---
+min_dte: 7
+max_dte: 30
+
+# --- Exit management for OPEN positions ---
+profit_target_pct: 0.50          # close when 50% of credit captured
+stop_loss_pct: 1.50              # close when loss >= 1.5x credit received
+exit_days_before_expiry: 3       # close before expiration
+
+# --- Loop ---
+scan_interval_minutes: 10
+
+# --- Optional AI analyst veto (disabled for pilot) ---
+ai_review:
+  enabled: false
+  model: qwen3.8-max
+  base_url: https://opencode.ai/zen/go/v1
+
+# --- Tradier sandbox credentials (optional) ---
+tradier_token: "IAGlcbVmty2rhAVN32JuYid15mBS"
+tradier_account_id: "VA31022852"
+tradier_base_url: "https://sandbox.tradier.com/v1"
+
+# --- Logging ---
+log_level: INFO
