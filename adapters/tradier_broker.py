@@ -2,6 +2,7 @@
 # Place at adapters/tradier_broker.py and implement the methods the bot expects (quote, place_order, account, cancel, etc.)
 
 import requests
+from bot.utils.retry_helper import retry
 import os
 
 BASE_URL = "https://api.tradier.com/v1"
