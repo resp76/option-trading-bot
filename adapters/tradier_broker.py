@@ -5,12 +5,16 @@ import requests
 import os
 
 BASE_URL = "https://api.tradier.com/v1"
+# Tradier sandbox (use by setting TRADIER_BASE_URL env var to this value)
+SANDBOX_URL = "https://sandbox.tradier.com/v1"
 
 class TradierBroker:
     def __init__(self, token=None, account_id=None, base_url=None):
+        # Token and account can come from args or environment variables.
+        # Base URL preference order: explicit arg -> TRADIER_BASE_URL env -> default BASE_URL
         self.token = token or os.environ.get('TRADIER_TOKEN')
         self.account_id = account_id or os.environ.get('TRADIER_ACCOUNT_ID')
-        self.base_url = base_url or BASE_URL
+        self.base_url = base_url or os.environ.get('TRADIER_BASE_URL') or BASE_URL
 
     def _headers(self):
         return {
