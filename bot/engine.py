@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 
 from .ai.analyst import ai_review
-from .broker.paper_broker import PaperBroker
 from .data.market_data import MarketData
 from .risk.exit_manager import manage_exits
 from .risk.risk_manager import RiskManager
@@ -18,7 +17,27 @@ class TradingBot:
     def __init__(self, cfg: dict):
         self.cfg = cfg
         self.data = MarketData()
-        self.broker = PaperBroker(starting_capital=float(cfg.get("starting_capital", 100_000)))
+        # Broker selection: supports 'paper' (default) and 'tradier'
+        broker_name = cfg.get("broker", "paper").lower()
+        if broker_name == "tradier":
+            try:
+                from adapters.tradier_broker import TradierBroker
+            except Exception:
+                # fallback to paper broker if import fails
+                from .broker.paper_broker import PaperBroker
+                logger.warning("Failed to load TradierBroker, falling back to PaperBroker")
+                self.broker = PaperBroker(starting_capital=float(cfg.get("starting_capital", 100_000)))
+            else:
+                # TradierBroker reads token/account/base_url from env or args
+                self.broker = TradierBroker(
+                    token=cfg.get("tradier_token"),
+                    account_id=cfg.get("tradier_account_id"),
+                    base_url=cfg.get("tradier_base_url"),
+                )
+        else:
+            from .broker.paper_broker import PaperBroker
+            self.broker = PaperBroker(starting_capital=float(cfg.get("starting_capital", 100_000)))
+
         self.risk = RiskManager(cfg)
 
     def scan_ticker(self, ticker: str) -> dict:

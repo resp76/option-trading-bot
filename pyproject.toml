@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0","wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "option-trading-bot"
+version = "0.1.0"
+dependencies = [
+  "typer[all]>=0.7",
+  "requests",
+]
+
+[project.entry-points.console_scripts]
+option-bot = "bot.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["bot*", "adapters*"]
