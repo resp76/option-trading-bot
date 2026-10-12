@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.stats import norm
+import numpy as np
+
 
 
 def bsm_price(S: float, K: float, T: float, r: float, sigma: float,
@@ -26,7 +28,7 @@ def bsm_price(S: float, K: float, T: float, r: float, sigma: float,
 
 def bsm_greeks(S: float, K: float, T: float, r: float, sigma: float,
                q: float = 0.0, kind: str = "call") -> dict:
-    """Delta, Gamma, Theta (per day), Vega (per 1% vol), Rho via BSM."""
+    """Delta, Gamma, Theta (per day), Vega (per 1% vol), Rho via BSM for scalar inputs."""
     if kind == "stock":
         return {"delta": 1.0, "gamma": 0.0, "theta": 0.0, "vega": 0.0, "rho": 0.0}
     if T <= 0 or sigma <= 0:
@@ -56,6 +58,44 @@ def bsm_greeks(S: float, K: float, T: float, r: float, sigma: float,
     theta = (term1 + term2 + term3) / 365.0
     return {"delta": float(delta), "gamma": float(gamma), "theta": float(theta),
             "vega": float(vega), "rho": float(rho)}
+
+
+def bsm_greeks_vectorized(S: float, K, T, r: float, sigma, q: float = 0.0, kind: str = "call") -> dict:
+    """Vectorized greeks for array inputs. Returns arrays for each greek.
+    K, T, sigma may be numpy arrays of the same shape.
+    """
+    # ensure numpy arrays
+    K = np.asarray(K)
+    T = np.asarray(T)
+    sigma = np.asarray(sigma)
+
+    sqrt_T = np.sqrt(T)
+    d1 = (np.log(S / K) + (r - q + 0.5 * sigma ** 2) * T) / (sigma * sqrt_T)
+    d2 = d1 - sigma * sqrt_T
+
+    pdf_d1 = norm.pdf(d1)
+    gamma = (np.exp(-q * T) * pdf_d1) / (S * sigma * sqrt_T)
+    vega = S * np.exp(-q * T) * pdf_d1 * sqrt_T / 100.0
+
+    if kind == "call":
+        delta = np.exp(-q * T) * norm.cdf(d1)
+        rho = (K * T * np.exp(-r * T) * norm.cdf(d2)) / 100.0
+    else:
+        delta = -np.exp(-q * T) * norm.cdf(-d1)
+        rho = (-K * T * np.exp(-r * T) * norm.cdf(-d2)) / 100.0
+
+    term1 = -(S * sigma * np.exp(-q * T) * pdf_d1) / (2 * sqrt_T)
+    term2 = np.where(kind == "call", -r * K * np.exp(-r * T) * norm.cdf(d2), r * K * np.exp(-r * T) * norm.cdf(-d2))
+    term3 = np.where(kind == "call", q * S * np.exp(-q * T) * norm.cdf(d1), -q * S * np.exp(-q * T) * norm.cdf(-d1))
+    theta = (term1 + term2 + term3) / 365.0
+
+    return {
+        "delta": delta,
+        "gamma": gamma,
+        "theta": theta,
+        "vega": vega,
+        "rho": rho,
+    }
 
 
 def binomial_tree_price(S: float, K: float, T: float, r: float, sigma: float,

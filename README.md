@@ -1,105 +1,88 @@
 # Option Trading Bot
 
-An autonomous **paper-trading** options bot built on top of the quant stack from
-[EconomiaUNMSM/OptionStrat-AI](https://github.com/EconomiaUNMSM/OptionStrat-AI) —
-Black-Scholes pricing, Finviz/VADER news sentiment, and the "Theta Gang" strategy
-recommender — wired into a trading loop with risk management and a paper broker.
+This repository contains a configurable options trading bot (paper/live) with monitoring and Tradier adapter stubs.
 
-> ⚠️ **This bot trades with PAPER MONEY ONLY by default.** Live broker execution is
-> intentionally NOT wired up. Options are leveraged instruments; do not connect real
-> money without extensive testing and your own risk review.
+## Getting started
 
-## How it works
+Prereqs
+- Linux (WSL fine)
+- Python 3.11
+- Git
 
-```
-┌────────────┐   ┌──────────────┐   ┌───────────────┐   ┌────────────┐   ┌──────────────┐
-│ Market Data │──▶│   Signal      │──▶│  Strategy      │──▶│ Risk Gate   │──▶│ Paper Broker  │
-│ (yfinance)  │   │ (sentiment +  │   │ Recommender    │   │ (sizing,    │   │ (simulated    │
-│ spot, chain │   │  momentum)    │   │ (spreads,      │   │  caps, POP) │   │  fills, P&L)  │
-└────────────┘   └──────────────┘   │  condors)      │   └────────────┘   └──────────────┘
-                                     └───────────────┘          │                  │
-                                                                ▼                  ▼
-                                                          ┌────────────┐   ┌──────────────┐
-                                                          │ AI Analyst  │   │ Exit Manager  │
-                                                          │ (optional   │   │ (TP / SL /    │
-                                                          │  LLM veto)  │   │  expiry)      │
-                                                          └────────────┘   └──────────────┘
-```
+1) Clone / open the repo
 
-Each cycle, per configured ticker:
-
-1. **Data** — spot price, option chain (bid/ask/IV/volume/OI), historical volatility.
-2. **Signal** — combines news sentiment (Finviz + VADER, from OptionStrat-AI) with
-   short-term price momentum into a directional bias: `bullish` / `bearish` / `neutral`.
-3. **Strategy** — the Theta-Gang recommender picks a defined-risk structure for the bias:
-   - Bullish → **Bull Put Spread** (credit)
-   - Bearish → **Bear Call Spread** (credit)
-   - Neutral → **Iron Condor**
-   Liquidity filters (volume > 10, OI > 50) and delta targets follow the upstream logic.
-4. **Risk gate** — max open positions, max capital at risk, min credit, liquidity checks,
-   no undefined-risk structures by default.
-5. **Optional AI analyst** — an LLM can review the proposed trade and veto it
-   (works with any OpenAI-compatible endpoint, e.g. OpenCode Go).
-6. **Execution** — paper fills at the mid price; state persisted to `state/paper_portfolio.json`.
-7. **Exit management** — open positions are re-priced every cycle and closed on:
-   profit target (default 50% of credit), stop loss (default 200% of credit), or
-   approaching expiration (default ≤ 2 days to expiry).
-
-## Quick start
+2) Create and activate venv
 
 ```bash
-cd option-trading-bot
-python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-
-cp config.example.yaml config.yaml
-cp .env.example .env        # optional: add OPENAI_API_KEY / LLM base URL for AI veto
-
-# Single scan + trade cycle (safe to run any time)
-python run.py --once
-
-# Continuous loop (scans every N minutes, see config)
-python run.py --loop
-
-# Portfolio status & P&L
-python run.py --status
-
-# Reset the paper account
-python run.py --reset
+pip install -e .
 ```
 
-## Configuration (`config.yaml`)
+3) Configure credentials (do NOT paste API keys in chat)
 
-| Key | Default | Meaning |
-|---|---|---|
-| `tickers` | `[SPY, QQQ]` | Underlyings to scan |
-| `starting_capital` | `100000` | Paper account balance |
-| `risk_profile` | `balanced` | `conservative` / `balanced` / `aggressive` (delta targets) |
-| `max_open_positions` | `4` | Position cap |
-| `max_positions_per_ticker` | `1` | Per-underlying cap |
-| `max_capital_per_trade` | `5000` | Max buying power per spread |
-| `min_credit` | `0.50` | Minimum credit per contract ($) |
-| `min_volume` / `min_open_interest` | `10` / `50` | Liquidity filters |
-| `min_dte` / `max_dte` | `20` / `60` | Expiration window for new trades |
-| `profit_target_pct` | `0.50` | Close at 50% of max credit captured |
-| `stop_loss_pct` | `2.00` | Close if loss reaches 2x credit |
-| `exit_days_before_expiry` | `2` | Close before expiration |
-| `scan_interval_minutes` | `30` | Loop frequency |
-| `ai_review.enabled` | `false` | LLM veto of proposed trades |
-
-## Tests
+Create a credentials file readable only by you:
 
 ```bash
-python -m pytest tests/ -v
+mkdir -p ~/.config/option-bot
+cat > ~/.config/option-bot/credentials.env <<'EOF'
+export TRADIER_TOKEN="PASTE_YOUR_TOKEN_HERE"
+export TRADIER_ACCOUNT_ID="YOUR_ACCOUNT_ID"
+EOF
+chmod 600 ~/.config/option-bot/credentials.env
+source ~/.config/option-bot/credentials.env
 ```
 
-## Credits
+Alternatively export the env vars in your shell directly:
 
-- Quant core adapted from [EconomiaUNMSM/OptionStrat-AI](https://github.com/EconomiaUNMSM/OptionStrat-AI)
-  (BSM engine, Finviz sentiment, Theta-Gang recommender).
-- Data: [yfinance](https://github.com/ranaroussi/yfinance) (delayed quotes — not for live execution).
+```bash
+export TRADIER_TOKEN="..."
+export TRADIER_ACCOUNT_ID="..."
+```
 
-## Disclaimer
+4) Run the bot
 
-Educational software. No warranty. Not financial advice. Paper broker only; any live
-trading integration is left as an exercise and is your sole responsibility.
+- Run a single scan cycle:
+
+```
+option-bot once
+```
+
+- Show the status summary:
+
+```
+option-bot status
+```
+
+- Start a background loop (writes to `run.log`):
+
+```
+option-bot start --background
+```
+
+- Stop the loop:
+
+```
+option-bot stop
+```
+
+## GitHub Actions (CI / scheduled monitor)
+
+This repo includes a scheduled workflow that can run the monitor script. For GitHub Actions to run the monitor against Tradier, set repo secrets:
+
+- `TRADIER_TOKEN`
+- `TRADIER_ACCOUNT_ID`
+
+Go to your repository > Settings > Secrets and variables > Actions and add these secrets. The workflow is configured to skip the monitor job when secrets are not set.
+
+## Security
+- Never commit API tokens or secrets. Use environment variables or GitHub Actions secrets.
+- For production, run the bot under a dedicated user and use systemd or a supervised process.
+
+## Troubleshooting
+- If `option-bot` command isn’t found: ensure `pip install -e .` ran successfully in the repo venv.
+- If API calls return 401/403: regenerate token in Tradier dashboard and update your env.
+
+## License
+MIT
